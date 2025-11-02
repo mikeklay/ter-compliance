@@ -229,8 +229,8 @@ If you use substantial portions of this work, I appreciate attribution and links
 
 Michael Kalajian  
 Master of Science in Computer Science  
-GitHub: [@yourusername](https://github.com/yourusername)  
-Email: your.email@example.com
+GitHub: [@mikeklay](https://github.com/mikeklay)  
+Email: mikeklay@gmail.com
 
 I focus on full-stack development, cloud infrastructure, and building systems that address real operational challenges.
 
