@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard - TER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .compliance-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .compliance-compliant { background-color: #28a745; }
+        .compliance-non-compliant { background-color: #dc3545; }
+        .action-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">TER - Manager Portal</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/manager/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/auth/logout">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2><i class="bi bi-clipboard-check"></i> Manager Dashboard</h2>
+                <p class="text-muted">Compliance Management & Access Control</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <form method="POST" action="/manager/autocheck" class="d-inline">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-arrow-repeat"></i> Run Autocheck
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white action-card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Active Access</h6>
+                        <h2 class="display-4">{{ active_count }}</h2>
+                        <small>Engineers with access</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark action-card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Pending Approval</h6>
+                        <h2 class="display-4">{{ pending_count }}</h2>
+                        <small>Awaiting your review</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white action-card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Expiring Soon</h6>
+                        <h2 class="display-4">{{ expiring_count }}</h2>
+                        <small>Within 30 days</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white action-card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Non-Compliant</h6>
+                        <h2 class="display-4">{{ non_compliant_count }}</h2>
+                        <small>Require attention</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Critical Alerts -->
+        {% if non_compliant_active|length > 0 %}
+        <div class="alert alert-danger" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-exclamation-octagon-fill"></i> Critical: Active Access with Non-Compliance</h5>
+            <p><strong>{{ non_compliant_active|length }} engineer(s)</strong> currently have active lab access but are non-compliant. Run autocheck to revoke access automatically.</p>
+            <hr>
+            <ul class="mb-0">
+                {% for item in non_compliant_active[:5] %}
+                <li>{{ item.engineer_name }} - {{ item.lab_name }} ({{ item.issues|length }} issue(s))</li>
+                {% endfor %}
+                {% if non_compliant_active|length > 5 %}
+                <li><em>...and {{ non_compliant_active|length - 5 }} more</em></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if expiring_soon|length > 0 %}
+        <div class="alert alert-warning" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-clock-history"></i> Training Expiring Within 30 Days</h5>
+            <p><strong>{{ expiring_soon|length }} training certificate(s)</strong> will expire soon. Contact engineers to schedule renewal.</p>
+        </div>
+        {% endif %}
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="managerTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button">
+                    <i class="bi bi-hourglass-split"></i> Pending Approvals <span class="badge bg-warning ms-1">{{ pending_count }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="compliance-tab" data-bs-toggle="tab" data-bs-target="#compliance" type="button">
+                    <i class="bi bi-shield-check"></i> Compliance Status
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="expiring-tab" data-bs-toggle="tab" data-bs-target="#expiring" type="button">
+                    <i class="bi bi-calendar-event"></i> Expiring Training <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Reports
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="managerTabsContent">
+            <!-- Pending Approvals Tab -->
+            <div class="tab-pane fade show active" id="pending" role="tabpanel">
+                {% if pending_requests %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Compliance</th>
+                                <th>Engineer</th>
+                                <th>Laboratory</th>
+                                <th>Requested</th>
+                                <th>Issues</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in pending_requests %}
+                            <tr class="{% if req.is_compliant %}table-success{% else %}table-warning{% endif %}">
+                                <td class="text-center">
+                                    <span class="compliance-indicator {% if req.is_compliant %}compliance-compliant{% else %}compliance-non-compliant{% endif %}" 
+                                          title="{% if req.is_compliant %}Compliant{% else %}Non-Compliant{% endif %}"></span>
+                                </td>
+                                <td>
+                                    <strong>{{ req.engineer_name }}</strong>
+                                    <br><small class="text-muted">ID: {{ req.engineer_id }}</small>
+                                </td>
+                                <td>
+                                    {{ req.lab_name }}
+                                    <br><small class="text-muted">{{ req.lab_code }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ req.requested_at.strftime('%Y-%m-%d %H:%M') if req.requested_at else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    {% if req.is_compliant %}
+                                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> All Clear</span>
+                                    {% else %}
+                                    <small class="text-danger">
+                                        {% if req.training_issues %}
+                                        <strong>Training:</strong> {{ req.training_issues|join(', ') }}<br>
+                                        {% endif %}
+                                        {% if req.doc_issues %}
+                                        <strong>Docs:</strong> {{ req.doc_issues|join(', ') }}
+                                        {% endif %}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="/manager/approve" class="d-inline">
+                                        <input type="hidden" name="engineer_id" value="{{ req.engineer_id }}">
+                                        <input type="hidden" name="lab_id" value="{{ req.lab_id }}">
+                                        <button type="submit" class="btn btn-sm btn-success" 
+                                                {% if not req.is_compliant %}disabled title="Non-compliant"{% endif %}>
+                                            <i class="bi bi-check-circle"></i> Approve
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="/manager/revoke" class="d-inline">
+                                        <input type="hidden" name="engineer_id" value="{{ req.engineer_id }}">
+                                        <input type="hidden" name="lab_id" value="{{ req.lab_id }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-x-circle"></i> Deny
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox display-1"></i>
+                    <p class="mt-3">No pending approval requests</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Compliance Status Tab -->
+            <div class="tab-pane fade" id="compliance" role="tabpanel">
+                {% if compliance_status %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Status</th>
+                                <th>Engineer</th>
+                                <th>Laboratory</th>
+                                <th>Access Status</th>
+                                <th>Training Issues</th>
+                                <th>Document Issues</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in compliance_status %}
+                            <tr class="{% if item.is_compliant %}table-success{% else %}table-danger{% endif %}">
+                                <td class="text-center">
+                                    <span class="compliance-indicator {% if item.is_compliant %}compliance-compliant{% else %}compliance-non-compliant{% endif %}"></span>
+                                </td>
+                                <td>{{ item.engineer_name }}</td>
+                                <td>{{ item.lab_name }}</td>
+                                <td>
+                                    <span class="badge bg-{% if item.access_status == 'active' %}success{% elif item.access_status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                        {{ item.access_status|upper }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if item.training_issues %}
+                                    <small class="text-danger">{{ item.training_issues|join(', ') }}</small>
+                                    {% else %}
+                                    <small class="text-success">✓ Current</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.doc_issues %}
+                                    <small class="text-danger">{{ item.doc_issues|join(', ') }}</small>
+                                    {% else %}
+                                    <small class="text-success">✓ Complete</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.access_status == 'active' and not item.is_compliant %}
+                                    <form method="POST" action="/manager/revoke" class="d-inline">
+                                        <input type="hidden" name="engineer_id" value="{{ item.engineer_id }}">
+                                        <input type="hidden" name="lab_id" value="{{ item.lab_id }}">
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-exclamation-triangle"></i> Revoke
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-search display-1"></i>
+                    <p class="mt-3">No compliance data available</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Expiring Training Tab -->
+            <div class="tab-pane fade" id="expiring" role="tabpanel">
+                {% if expiring_soon %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Engineer</th>
+                                <th>Course</th>
+                                <th>Completed</th>
+                                <th>Expires</th>
+                                <th>Days Left</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in expiring_soon %}
+                            <tr class="{% if item.days_left < 0 %}table-danger{% elif item.days_left <= 7 %}table-warning{% endif %}">
+                                <td>{{ item.engineer_name }}</td>
+                                <td>
+                                    <strong>{{ item.course_name }}</strong>
+                                    <br><small class="text-muted">{{ item.course_code }}</small>
+                                </td>
+                                <td><small>{{ item.date_taken.strftime('%Y-%m-%d') }}</small></td>
+                                <td><small>{{ item.due_date.strftime('%Y-%m-%d') }}</small></td>
+                                <td>
+                                    <strong class="{% if item.days_left < 0 %}text-danger{% elif item.days_left <= 7 %}text-warning{% endif %}">
+                                        {{ item.days_left }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    {% if item.days_left < 0 %}
+                                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Expired</span>
+                                    {% elif item.days_left <= 7 %}
+                                    <span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> Critical</span>
+                                    {% else %}
+                                    <span class="badge bg-warning"><i class="bi bi-clock"></i> Expiring</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-check-circle display-1 text-success"></i>
+                    <p class="mt-3">No training expiring within 30 days</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Reports Tab -->
+            <div class="tab-pane fade" id="reports" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-file-earmark-check"></i> Active Access Report</h5>
+                                <p class="card-text">Export all currently active lab access records.</p>
+                                <a href="/admin/reports/active.csv" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-hourglass-split"></i> Pending Requests Report</h5>
+                                <p class="card-text">Export all pending access requests.</p>
+                                <a href="/admin/reports/pending.csv" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-calendar-x"></i> Expiring Training Report</h5>
+                                <p class="card-text">Export training certificates expiring within 30 days.</p>
+                                <a href="/admin/reports/expiring30.csv" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-shield-check"></i> Compliance Status Report</h5>
+                                <p class="card-text">Export detailed compliance status with issues.</p>
+                                <a href="/admin/reports/compliance_status.csv" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-mortarboard"></i> All Completions Report</h5>
+                                <p class="card-text">Export all training completion records.</p>
+                                <a href="/admin/reports/completions.csv" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-file-earmark-text"></i> Document Acknowledgments Report</h5>
+                                <p class="card-text">Export all document acknowledgment records.</p>
+                                <a href="/admin/reports/doc_acks.csv" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-3 bg-light text-center">
+        <p class="text-muted mb-0">&copy; 2025 TER - Training &amp; Engineering Repository</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

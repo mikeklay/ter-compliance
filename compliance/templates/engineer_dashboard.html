@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineer Dashboard - TER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .status-badge-large {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+        .training-card {
+            transition: transform 0.2s;
+        }
+        .training-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">TER - Training & Engineering Repository</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/engineer/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/engineer/documents">Documents</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/auth/logout">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Welcome Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h2><i class="bi bi-person-badge"></i> Welcome, {{ engineer.name }}</h2>
+                <p class="text-muted">Employee #{{ engineer.employee_no }} | {{ engineer.email }}</p>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Lab Access</h6>
+                        <h2 class="display-6">{{ access_records|selectattr('status', 'equalto', 'active')|list|length }}</h2>
+                        <small>Active</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Pending Requests</h6>
+                        <h2 class="display-6">{{ access_records|selectattr('status', 'equalto', 'pending')|list|length }}</h2>
+                        <small>Awaiting Approval</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Training</h6>
+                        <h2 class="display-6">{{ training_list|selectattr('status', 'equalto', 'expired')|list|length }}</h2>
+                        <small>Expired</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Documents</h6>
+                        <h2 class="display-6">{{ pending_docs|length }}</h2>
+                        <small>Need Acknowledgment</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        {% if pending_docs|length > 0 %}
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>Action Required:</strong> You have {{ pending_docs|length }} document(s) requiring acknowledgment.
+            <a href="/engineer/documents" class="alert-link">Review Documents</a>
+        </div>
+        {% endif %}
+
+        {% if training_list|selectattr('status', 'equalto', 'expired')|list|length > 0 %}
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-octagon-fill"></i>
+            <strong>Expired Training:</strong> You have expired training certificates. Contact your manager to schedule renewal.
+        </div>
+        {% endif %}
+
+        {% if training_list|selectattr('status', 'equalto', 'expiring_soon')|list|length > 0 %}
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle-fill"></i>
+            <strong>Upcoming Expirations:</strong> Some training certificates expire within 30 days. Plan to renew soon.
+        </div>
+        {% endif %}
+
+        <!-- Lab Access Status -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-door-open"></i> Laboratory Access Status</h5>
+            </div>
+            <div class="card-body">
+                {% if access_records %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Laboratory</th>
+                                <th>Status</th>
+                                <th>Effective Date</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for access in access_records %}
+                            <tr>
+                                <td>
+                                    <strong>{{ labs_dict[access.lab_id].name if access.lab_id in labs_dict else 'Unknown' }}</strong>
+                                    <br><small class="text-muted">{{ labs_dict[access.lab_id].code if access.lab_id in labs_dict else '' }}</small>
+                                </td>
+                                <td>
+                                    {% if access.status == 'active' %}
+                                    <span class="badge bg-success status-badge-large">
+                                        <i class="bi bi-check-circle"></i> Active
+                                    </span>
+                                    {% elif access.status == 'pending' %}
+                                    <span class="badge bg-warning status-badge-large">
+                                        <i class="bi bi-hourglass-split"></i> Pending
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-danger status-badge-large">
+                                        <i class="bi bi-x-circle"></i> Revoked
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ access.effective_at.strftime('%Y-%m-%d %H:%M') if access.effective_at else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ access.reason_code or 'N/A' }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox display-4"></i>
+                    <p class="mt-3">No lab access records. Request access from the home page.</p>
+                    <a href="/" class="btn btn-primary">Request Lab Access</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Training Status -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Training Status</h5>
+            </div>
+            <div class="card-body">
+                {% if training_list %}
+                <div class="row">
+                    {% for item in training_list %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card training-card h-100 border-{{ item.status_class }}">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    {{ item.course.name }}
+                                    <span class="badge bg-secondary">{{ item.course.code }}</span>
+                                </h6>
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar-check"></i> Completed: {{ item.completion.date_taken.strftime('%Y-%m-%d') }}
+                                    </small>
+                                </p>
+                                {% if item.due_date %}
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small>
+                                            <i class="bi bi-calendar-event"></i> Expires: {{ item.due_date.strftime('%Y-%m-%d') }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        {% if item.status == 'expired' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> Expired ({{ item.days_left }} days)
+                                        </span>
+                                        {% elif item.status == 'expiring_soon' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-exclamation-triangle"></i> {{ item.days_left }} days left
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Current ({{ item.days_left }} days)
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-infinity"></i> No Expiration
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-journal-x display-4"></i>
+                    <p class="mt-3">No training records found. Contact your manager to record completed training.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pending Document Acknowledgments -->
+        {% if pending_docs %}
+        <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documents Requiring Acknowledgment</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">The following documents must be acknowledged to maintain compliance:</p>
+                <div class="list-group">
+                    {% for item in pending_docs %}
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ item.doc.title }} <span class="badge bg-secondary">v{{ item.doc.version }}</span></h6>
+                            <p class="mb-1 text-muted">
+                                <small>{{ item.lab.name if item.lab else 'Unknown Lab' }}</small>
+                            </p>
+                        </div>
+                        <div>
+                            <form method="POST" action="/engineer/acknowledge/{{ item.doc.id }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-check-square"></i> Acknowledge
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3 text-end">
+                    <a href="/engineer/documents" class="btn btn-outline-primary">
+                        View All Documents <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <a href="/" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Request Lab Access
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="/engineer/documents" class="btn btn-outline-info w-100">
+                            <i class="bi bi-file-earmark-check"></i> Review Documents
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="/" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-house"></i> Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-3 bg-light text-center">
+        <p class="text-muted mb-0">&copy; 2025 TER - Training &amp; Engineering Repository</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

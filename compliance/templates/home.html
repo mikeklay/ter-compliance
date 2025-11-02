@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TER - Training & Engineering Repository</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .section-card {
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .table-sm td, .table-sm th {
+            padding: 0.4rem;
+            font-size: 0.9rem;
+        }
+        .badge-days {
+            min-width: 50px;
+            display: inline-block;
+        }
+        .quick-actions-bar {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 2px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-building"></i> TER - Training & Engineering Repository
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if session_role == 'engineer' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/engineer/dashboard">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/engineer/documents">
+                            <i class="bi bi-file-earmark-text"></i> Documents
+                        </a>
+                    </li>
+                    {% elif session_role in ['manager', 'admin'] %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/manager/dashboard">
+                            <i class="bi bi-clipboard-check"></i> Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ session_email or 'User' }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><span class="dropdown-item-text">Role: <strong>{{ session_role|upper }}</strong></span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/auth/logout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Role-Based Quick Actions Bar -->
+    <div class="quick-actions-bar py-3">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="btn-group" role="group">
+                        {% if session_role == 'engineer' %}
+                        <a href="/engineer/dashboard" class="btn btn-primary">
+                            <i class="bi bi-speedometer2"></i> My Dashboard
+                        </a>
+                        <a href="/engineer/documents" class="btn btn-outline-primary">
+                            <i class="bi bi-file-earmark-text"></i> My Documents
+                        </a>
+                        
+                        {% elif session_role == 'manager' %}
+                        <a href="/manager/dashboard" class="btn btn-success">
+                            <i class="bi bi-clipboard-check"></i> Manager Dashboard
+                        </a>
+                        <form method="POST" action="/manager/autocheck" class="d-inline">
+                            <button type="submit" class="btn btn-outline-success">
+                                <i class="bi bi-arrow-repeat"></i> Run Autocheck
+                            </button>
+                        </form>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-download"></i> Reports
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/admin/reports/active.csv">
+                                    <i class="bi bi-check-circle"></i> Active Access
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/pending.csv">
+                                    <i class="bi bi-hourglass-split"></i> Pending Requests
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/expiring30.csv">
+                                    <i class="bi bi-calendar-x"></i> Expiring Training (30d)
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/compliance_status.csv">
+                                    <i class="bi bi-shield-check"></i> Compliance Status
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/admin/reports/completions.csv">
+                                    <i class="bi bi-mortarboard"></i> All Completions
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/doc_acks.csv">
+                                    <i class="bi bi-file-earmark-check"></i> Document Acknowledgments
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/access.csv">
+                                    <i class="bi bi-clock-history"></i> Access History
+                                </a></li>
+                            </ul>
+                        </div>
+                        
+                        {% elif session_role == 'admin' %}
+                        <a href="/manager/dashboard" class="btn btn-danger">
+                            <i class="bi bi-gear"></i> Admin Dashboard
+                        </a>
+                        <form method="POST" action="/manager/autocheck" class="d-inline">
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-arrow-repeat"></i> Run Autocheck
+                            </button>
+                        </form>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-danger dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-download"></i> Reports
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/admin/reports/active.csv">
+                                    <i class="bi bi-check-circle"></i> Active Access
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/pending.csv">
+                                    <i class="bi bi-hourglass-split"></i> Pending Requests
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/expiring30.csv">
+                                    <i class="bi bi-calendar-x"></i> Expiring Training (30d)
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/compliance_status.csv">
+                                    <i class="bi bi-shield-check"></i> Compliance Status
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/admin/reports/completions.csv">
+                                    <i class="bi bi-mortarboard"></i> All Completions
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/doc_acks.csv">
+                                    <i class="bi bi-file-earmark-check"></i> Document Acknowledgments
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/reports/access.csv">
+                                    <i class="bi bi-clock-history"></i> Access History
+                                </a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="/" class="btn btn-outline-secondary active">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h2><i class="bi bi-house-door"></i> Home - Training & Engineering Repository</h2>
+                <p class="text-muted">
+                    Logged in as: <strong>{{ session_email }}</strong> 
+                    | Role: <span class="badge bg-primary">{{ session_role|upper }}</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="row">
+            <!-- Left Column: Access Status & Information -->
+            <div class="col-lg-8">
+                <!-- Active Access Section -->
+                <div class="card section-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-check-circle"></i> Active Laboratory Access</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if active %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Engineer</th>
+                                        <th>Laboratory</th>
+                                        <th>Since</th>
+                                        {% if session_role in ['manager', 'admin'] %}
+                                        <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for acc in active %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ eng_by_id[acc.engineer_id].name if acc.engineer_id in eng_by_id else 'Unknown' }}</strong>
+                                            <br><small class="text-muted">ID: {{ acc.engineer_id }}</small>
+                                        </td>
+                                        <td>
+                                            {{ lab_by_id[acc.lab_id].name if acc.lab_id in lab_by_id else 'Unknown' }}
+                                            <br><small class="text-muted">{{ lab_by_id[acc.lab_id].code if acc.lab_id in lab_by_id else '' }}</small>
+                                        </td>
+                                        <td><small>{{ acc.effective_at.strftime('%Y-%m-%d %H:%M') if acc.effective_at else 'N/A' }}</small></td>
+                                        {% if session_role in ['manager', 'admin'] %}
+                                        <td>
+                                            <form method="POST" action="/manager/revoke" class="d-inline">
+                                                <input type="hidden" name="engineer_id" value="{{ acc.engineer_id }}">
+                                                <input type="hidden" name="lab_id" value="{{ acc.lab_id }}">
+                                                <button type="submit" class="btn btn-sm btn-warning" title="Revoke Access">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-3">No active access records</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Pending Access Section -->
+                <div class="card section-card">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> Pending Access Requests</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if pending %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Engineer</th>
+                                        <th>Laboratory</th>
+                                        <th>Requested</th>
+                                        {% if session_role in ['manager', 'admin'] %}
+                                        <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in pending %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ eng_by_id[req.engineer_id].name if req.engineer_id in eng_by_id else 'Unknown' }}</strong>
+                                            <br><small class="text-muted">ID: {{ req.engineer_id }}</small>
+                                        </td>
+                                        <td>
+                                            {{ lab_by_id[req.lab_id].name if req.lab_id in lab_by_id else 'Unknown' }}
+                                            <br><small class="text-muted">{{ lab_by_id[req.lab_id].code if req.lab_id in lab_by_id else '' }}</small>
+                                        </td>
+                                        <td><small>{{ req.effective_at.strftime('%Y-%m-%d %H:%M') if req.effective_at else 'N/A' }}</small></td>
+                                        {% if session_role in ['manager', 'admin'] %}
+                                        <td>
+                                            <form method="POST" action="/manager/approve" class="d-inline">
+                                                <input type="hidden" name="engineer_id" value="{{ req.engineer_id }}">
+                                                <input type="hidden" name="lab_id" value="{{ req.lab_id }}">
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="/manager/revoke" class="d-inline">
+                                                <input type="hidden" name="engineer_id" value="{{ req.engineer_id }}">
+                                                <input type="hidden" name="lab_id" value="{{ req.lab_id }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Deny">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-3">No pending requests</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Training Completions Section -->
+                <div class="card section-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Training Completions</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if completions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Engineer</th>
+                                        <th>Course</th>
+                                        <th>Completed</th>
+                                        <th>Expires</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for comp in completions[:20] %}
+                                    {% set eng = eng_by_id.get(comp.engineer_id) %}
+                                    {% set course = courses|selectattr('id', 'equalto', comp.course_id)|first %}
+                                    {% set due_info = due_map.get((comp.engineer_id, comp.course_id)) %}
+                                    <tr>
+                                        <td>
+                                            {% if eng %}
+                                            {{ eng.name }}
+                                            <br><small class="text-muted">{{ eng.employee_no }}</small>
+                                            {% else %}
+                                            <small class="text-muted">ID: {{ comp.engineer_id }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if course %}
+                                            <strong>{{ course.name }}</strong>
+                                            <br><small class="text-muted">{{ course.code }}</small>
+                                            {% else %}
+                                            <small class="text-muted">ID: {{ comp.course_id }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td><small>{{ comp.date_taken.strftime('%Y-%m-%d') if comp.date_taken else 'N/A' }}</small></td>
+                                        <td>
+                                            {% if due_info and due_info.due %}
+                                            <small>{{ due_info.due.strftime('%Y-%m-%d') }}</small>
+                                            {% else %}
+                                            <small class="text-muted">No expiration</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if due_info and due_info.days is not none %}
+                                                {% if due_info.days < 0 %}
+                                                <span class="badge bg-danger badge-days">{{ due_info.days }}d</span>
+                                                {% elif due_info.days <= 30 %}
+                                                <span class="badge bg-warning text-dark badge-days">{{ due_info.days }}d</span>
+                                                {% else %}
+                                                <span class="badge bg-success badge-days">{{ due_info.days }}d</span>
+                                                {% endif %}
+                                            {% else %}
+                                            <span class="badge bg-secondary badge-days">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if completions|length > 20 %}
+                        <p class="text-muted text-center mb-0"><small>Showing 20 of {{ completions|length }} completions</small></p>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-3">No training completions recorded</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Documents Section -->
+                <div class="card section-card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Laboratory Documents</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if documents %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Laboratory</th>
+                                        <th>Version</th>
+                                        <th>Type</th>
+                                        <th>Uploaded</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for doc in documents[:15] %}
+                                    {% set lab = lab_by_id.get(doc.lab_id) %}
+                                    <tr>
+                                        <td><strong>{{ doc.title }}</strong></td>
+                                        <td>
+                                            {% if lab %}
+                                            {{ lab.name }}
+                                            <br><small class="text-muted">{{ lab.code }}</small>
+                                            {% else %}
+                                            <small class="text-muted">ID: {{ doc.lab_id }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge bg-secondary">v{{ doc.version }}</span></td>
+                                        <td>
+                                            {% if doc.mandatory %}
+                                            <span class="badge bg-danger">Required</span>
+                                            {% else %}
+                                            <span class="badge bg-info">Optional</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><small>{{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else 'N/A' }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if documents|length > 15 %}
+                        <p class="text-muted text-center mb-0"><small>Showing 15 of {{ documents|length }} documents</small></p>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-3">No documents uploaded</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Actions & Management -->
+            <div class="col-lg-4">
+                <!-- Engineer Actions -->
+                {% if session_role == 'engineer' %}
+                <div class="card section-card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person"></i> Engineer Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/engineer/request-access">
+                            <div class="mb-3">
+                                <label class="form-label">Request Lab Access</label>
+                                <select name="engineer_id" class="form-select form-select-sm" required>
+                                    <option value="">Select Engineer</option>
+                                    {% for eng in eng_by_id.values() %}
+                                    <option value="{{ eng.id }}">{{ eng.name }} ({{ eng.employee_no }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <select name="lab_id" class="form-select form-select-sm" required>
+                                    <option value="">Select Laboratory</option>
+                                    {% for lab in labs %}
+                                    <option value="{{ lab.id }}">{{ lab.name }} ({{ lab.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-circle"></i> Request Access
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Manager Actions -->
+                {% if session_role in ['manager', 'admin'] %}
+                <div class="card section-card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Manager Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/manager/autocheck" class="mb-3">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-arrow-repeat"></i> Run Compliance Autocheck
+                            </button>
+                        </form>
+                        <hr>
+                        <h6>Lab Metrics</h6>
+                        <form method="POST" action="/manager/metrics/save">
+                            <div class="mb-2">
+                                <select name="lab_id" class="form-select form-select-sm" required>
+                                    <option value="">Select Lab</option>
+                                    {% for lab in labs %}
+                                    <option value="{{ lab.id }}">{{ lab.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-4">
+                                    <input type="number" name="utilization" class="form-control form-control-sm" 
+                                           placeholder="Util %" min="0" max="100" required>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" name="condition" class="form-control form-control-sm" 
+                                           placeholder="Cond %" min="0" max="100" required>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" name="activity" class="form-control form-control-sm" 
+                                           placeholder="Act %" min="0" max="100" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-save"></i> Save Metrics
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Admin Actions -->
+                {% if session_role == 'admin' %}
+                <div class="card section-card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> Admin Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Add Engineer -->
+                        <h6>Add Engineer</h6>
+                        <form method="POST" action="/admin/engineer" class="mb-3">
+                            <input type="text" name="employee_no" class="form-control form-control-sm mb-2" 
+                                   placeholder="Employee #" required>
+                            <input type="text" name="name" class="form-control form-control-sm mb-2" 
+                                   placeholder="Full Name" required>
+                            <input type="email" name="email" class="form-control form-control-sm mb-2" 
+                                   placeholder="Email" required>
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="bi bi-person-plus"></i> Add Engineer
+                            </button>
+                        </form>
+                        <hr>
+
+                        <!-- Add Lab -->
+                        <h6>Add Laboratory</h6>
+                        <form method="POST" action="/admin/lab" class="mb-3">
+                            <input type="text" name="code" class="form-control form-control-sm mb-2" 
+                                   placeholder="Lab Code" required>
+                            <input type="text" name="name" class="form-control form-control-sm mb-2" 
+                                   placeholder="Lab Name" required>
+                            <input type="number" name="grace_days" class="form-control form-control-sm mb-2" 
+                                   placeholder="Grace Days" value="0" min="0">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="bi bi-building-add"></i> Add Lab
+                            </button>
+                        </form>
+                        <hr>
+
+                        <!-- Add Course -->
+                        <h6>Add Course</h6>
+                        <form method="POST" action="/admin/course" class="mb-3">
+                            <input type="text" name="code" class="form-control form-control-sm mb-2" 
+                                   placeholder="Course Code" required>
+                            <input type="text" name="name" class="form-control form-control-sm mb-2" 
+                                   placeholder="Course Name" required>
+                            <input type="number" name="valid_months" class="form-control form-control-sm mb-2" 
+                                   placeholder="Valid Months" value="12" min="1">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="bi bi-journal-plus"></i> Add Course
+                            </button>
+                        </form>
+                        <hr>
+
+                        <!-- Record Completion -->
+                        <h6>Record Training Completion</h6>
+                        <form method="POST" action="/admin/completion" enctype="multipart/form-data">
+                            <select name="engineer_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">Select Engineer</option>
+                                {% for eng in eng_by_id.values() %}
+                                <option value="{{ eng.id }}">{{ eng.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="course_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">Select Course</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="date" name="date_taken" class="form-control form-control-sm mb-2" 
+                                   value="{{ today.strftime('%Y-%m-%d') }}" required>
+                            <input type="file" name="certificate_file" class="form-control form-control-sm mb-2" 
+                                   accept=".pdf,.jpg,.png">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="bi bi-check-circle"></i> Record Completion
+                            </button>
+                        </form>
+                        <hr>
+
+                        <!-- Add Document -->
+                        <h6>Upload Document</h6>
+                        <form method="POST" action="/admin/document" enctype="multipart/form-data">
+                            <select name="lab_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">Select Lab</option>
+                                {% for lab in labs %}
+                                <option value="{{ lab.id }}">{{ lab.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="title" class="form-control form-control-sm mb-2" 
+                                   placeholder="Document Title" required>
+                            <input type="number" name="version" class="form-control form-control-sm mb-2" 
+                                   placeholder="Version" value="1" min="1">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="mandatory" value="1" checked>
+                                <label class="form-check-label">Mandatory</label>
+                            </div>
+                            <input type="file" name="file" class="form-control form-control-sm mb-2">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="bi bi-file-earmark-arrow-up"></i> Upload Document
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- System Information -->
+                <div class="card section-card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> System Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li><i class="bi bi-people text-primary"></i> <strong>Engineers:</strong> {{ eng_by_id|length }}</li>
+                            <li><i class="bi bi-building text-success"></i> <strong>Laboratories:</strong> {{ labs|length }}</li>
+                            <li><i class="bi bi-journal text-info"></i> <strong>Courses:</strong> {{ courses|length }}</li>
+                            <li><i class="bi bi-check-circle text-success"></i> <strong>Active Access:</strong> {{ active|length }}</li>
+                            <li><i class="bi bi-hourglass-split text-warning"></i> <strong>Pending:</strong> {{ pending|length }}</li>
+                            <li><i class="bi bi-mortarboard text-info"></i> <strong>Completions:</strong> {{ completions|length }}</li>
+                            <li><i class="bi bi-file-earmark text-secondary"></i> <strong>Documents:</strong> {{ documents|length }}</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Latest Lab Metrics (if available) -->
+                {% if latest_metrics %}
+                <div class="card section-card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Latest Lab Metrics</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for lab_id, metrics in latest_metrics.items() %}
+                        {% set lab = lab_by_id.get(lab_id) %}
+                        <div class="mb-3">
+                            <h6>{{ lab.name if lab else 'Unknown Lab' }}</h6>
+                            <div class="progress mb-1" style="height: 20px;">
+                                <div class="progress-bar bg-info" role="progressbar" 
+                                     style="width: {{ metrics.utilization }}%">
+                                    Util: {{ metrics.utilization }}%
+                                </div>
+                            </div>
+                            <div class="progress mb-1" style="height: 20px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ metrics.condition }}%">
+                                    Cond: {{ metrics.condition }}%
+                                </div>
+                            </div>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-warning" role="progressbar" 
+                                     style="width: {{ metrics.activity }}%">
+                                    Act: {{ metrics.activity }}%
+                                </div>
+                            </div>
+                            <small class="text-muted">As of: {{ metrics.asof.strftime('%Y-%m-%d') if metrics.asof else 'N/A' }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-3 bg-light text-center">
+        <p class="text-muted mb-0">&copy; 2025 TER - Training &amp; Engineering Repository | Role: {{ session_role|upper }}</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
