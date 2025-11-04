@@ -10,7 +10,7 @@
 
 **A cloud-based compliance management system for engineering laboratories**
 
-[Live Demo](http://44.255.41.45:5000) • [Problem Statement](#the-problem) • [Solution](#solution-architecture) • [Installation](#installation)
+[Live Demo](http://44.248.249.158:5000) • [Problem Statement](#the-problem) • [Solution](#solution-architecture) • [Installation](#installation)
 
 </div>
 
@@ -34,7 +34,7 @@ My system automates this entire workflow. When engineers submit access requests,
 
 ## Live Demo
 
-The system is deployed on AWS and accessible at [http://44.255.41.45:5000](http://44.255.41.45:5000). Three test accounts demonstrate different role capabilities:
+The system is deployed on AWS and accessible at [http://44.248.249.158:5000](http://44.248.249.158:5000). Three test accounts demonstrate different role capabilities:
 
 **Engineer Account** (`eng@example.com` / `Eng123!`)  
 View training status dashboard, submit lab access requests, and acknowledge compliance documents. The system immediately indicates qualification status or identifies missing requirements.
