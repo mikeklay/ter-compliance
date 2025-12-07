@@ -10,7 +10,7 @@
 
 **A cloud-based compliance management system for engineering laboratories**
 
-[Live Demo](http://54.203.9.249:5000) • [Problem Statement](#the-problem) • [Solution](#solution-architecture) • [Installation](#installation)
+[Live Demo](http://34.220.183.43:5000) • [Problem Statement](#the-problem) • [Solution](#solution-architecture) • [Installation](#installation)
 
 </div>
 
