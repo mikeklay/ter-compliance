@@ -34,7 +34,7 @@ My system automates this entire workflow. When engineers submit access requests,
 
 ## Live Demo
 
-The system is deployed on AWS and accessible at [http://54.203.9.249:5000](http://54.203.9.249:5000). Three test accounts demonstrate different role capabilities:
+The system is deployed on AWS and accessible at [http://54.203.9.249:5000](http://34.220.183.43:5000). Three test accounts demonstrate different role capabilities:
 
 **Engineer Account** (`eng@example.com` / `Eng123!`)  
 View training status dashboard, submit lab access requests, and acknowledge compliance documents. The system immediately indicates qualification status or identifies missing requirements.
