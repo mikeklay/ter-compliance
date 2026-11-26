@@ -8,7 +8,7 @@ from compliance.models import (
     db, Engineer, Lab, Course, LabRequirement, 
     Completion, Document, DocumentAck
 )
-from compliance.routes.manager import is_compliant_for_lab
+from compliance.engine import is_compliant_for_lab
 
 
 def test_current_training_is_compliant(app, sample_data):

@@ -6,7 +6,7 @@
 ![Flask](https://img.shields.io/badge/Flask-3.0-green.svg)
 ![AWS](https://img.shields.io/badge/AWS-RDS%20|%20S3%20|%20ECS-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Tests](https://img.shields.io/badge/Tests-61%20Passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Tests-62%20Passing-brightgreen.svg)
 
 **A cloud-based compliance management system for engineering laboratories**
 
@@ -22,7 +22,7 @@ I developed this system as my Master's capstone project to address a significant
 
 The Training and Engineering Repository consolidates training tracking, certificate storage, access control, and document management into a unified platform. Engineers view real-time training status and submit lab access requests. Managers approve requests with automated compliance verification that validates training currency and document acknowledgments. The system maintains comprehensive audit trails, stores certificates securely in AWS S3, and generates compliance reports on demand. This automation reduces manual compliance checking from 2-5 hours per week to approximately 3 seconds per verification.
 
-I deployed the complete system on AWS using RDS MySQL, S3 for encrypted storage, and ECS Fargate for containerized hosting, and ran it at a public endpoint for the capstone evaluation. The implementation includes 61 automated tests and JWT authentication with bcrypt password hashing. The hosted demo has since been retired to avoid ongoing cost; the application runs locally or in Docker in a few minutes (see Installation).
+I deployed the complete system on AWS using RDS MySQL, S3 for encrypted storage, and ECS Fargate for containerized hosting, and ran it at a public endpoint for the capstone evaluation. The implementation includes 62 automated tests and JWT authentication with bcrypt password hashing. The hosted demo has since been retired to avoid ongoing cost; the application runs locally or in Docker in a few minutes (see Installation).
 
 ## The Problem
 
@@ -65,7 +65,7 @@ Authentication leverages PyJWT for JSON Web Token generation and validation. Pas
 
 AWS infrastructure includes RDS MySQL (db.t3.micro instance with 20GB storage and automated backups), S3 for certificate and document storage (server-side encryption enabled, versioning enabled for audit evidence preservation), and ECS Fargate for serverless container execution (0.25 vCPU, 512MB RAM). CloudWatch collects logs, and IAM policies enforce least-privilege access limiting the application to specific S3 buckets and database instances.
 
-Testing and deployment tools include pytest for the 61 automated tests covering authentication, compliance logic, database models, routes, and report generation. Tests execute in about 7 seconds using in-memory SQLite. Docker provides consistent packaging, and Git handles version control.
+Testing and deployment tools include pytest for the 62 automated tests covering authentication, compliance logic, database models, routes, and report generation. Tests execute in about 7 seconds using in-memory SQLite. Docker provides consistent packaging, and Git handles version control.
 
 ## Database Design
 
@@ -173,7 +173,7 @@ The containerized approach provides complete isolation without dependency confli
 
 ## Testing
 
-The test suite includes 61 automated tests using pytest that verify actual functionality rather than superficial module imports. Authentication tests confirm valid credential acceptance, invalid credential rejection, proper JWT token generation with 8-hour expiration, and route protection against unauthenticated access.
+The test suite includes 62 automated tests using pytest that verify actual functionality rather than superficial module imports. Authentication tests confirm valid credential acceptance, invalid credential rejection, proper JWT token generation with 8-hour expiration, and route protection against unauthenticated access.
 
 Compliance engine tests validate core business logic: correct training expiration calculation based on validity periods, proper grace period application when configured, disqualification upon training expiration, and accurate document version requirement checking. Additional tests verify automated state transitions during autocheck operations, confirming appropriate access grants for qualified personnel and revocations for non-compliant personnel.
 
@@ -181,7 +181,7 @@ Database model tests ensure constraint enforcement: unique constraints preventin
 
 Report generation tests confirm CSV exports contain correct data in proper format, date range filtering functions accurately, and special characters in names or titles don't corrupt CSV formatting.
 
-All 61 tests pass in about 7 seconds using in-memory SQLite databases. Each test function receives a fresh database with fixture-loaded sample data, preventing test interference. Measured line coverage: 100% for the compliance engine (training currency, grace periods, document acknowledgments), 95% for authentication utilities, 97% for database models, and 56% overall; the remaining gaps are mostly admin and dashboard view code. Run `pytest --cov=compliance` to reproduce.
+All 62 tests pass in about 7 seconds using in-memory SQLite databases. Each test function receives a fresh database with fixture-loaded sample data, preventing test interference. Measured line coverage: 100% for the compliance engine (`compliance/engine.py`: training currency, grace periods, document acknowledgments), 95% for authentication utilities, 97% for database models, and 56% overall; the remaining gaps are mostly admin and dashboard view code. Run `pytest --cov=compliance` to reproduce.
 
 ## Security Implementation
 
@@ -207,7 +207,7 @@ What distinguishes this work is deployment on real AWS infrastructure rather tha
 
 Quantitative assessment demonstrates significant operational improvements. Automation reduces compliance checking from 2-5 hours weekly to approximately 3 seconds per verification - a 95-99% reduction in manual effort. Audit preparation previously requiring hours of manual data compilation now completes instantly via CSV report generation.
 
-Technical quality metrics include 61 automated tests executing in about 7 seconds using in-memory SQLite, providing rapid development feedback. During the capstone deployment, ECS Fargate automatically restarted the container on failure.
+Technical quality metrics include 62 automated tests executing in about 7 seconds using in-memory SQLite, providing rapid development feedback. During the capstone deployment, ECS Fargate automatically restarted the container on failure.
 
 Response times achieve 95th percentile under 500 milliseconds for page loads and form submissions. S3 file uploads require approximately 1.2 seconds for typical 500KB certificates, reasonable given cloud transfer latency. The system operates efficiently on minimal resources: 0.25 vCPU and 512MB RAM with average CPU utilization around 10% and memory usage approximately 200MB. Total production deployment cost ranges $30-45 monthly including database, storage, and compute resources.
 

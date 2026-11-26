@@ -6,6 +6,7 @@ from compliance.models import (
     LabRequirement, Document, DocumentAck,
     LabAccess, LabMetrics
 )
+from compliance.engine import add_months as _add_months
 
 bp = Blueprint("views", __name__)
 
@@ -28,15 +29,6 @@ def _days_badge(days: int | None) -> str:
     return f'<span class="badge text-bg-success">{days}d</span>'
 
 # ---------- Helpers ----------
-
-def _add_months(d: date, months: int) -> date:
-    y = d.year + (d.month - 1 + months) // 12
-    m = (d.month - 1 + months) % 12 + 1
-    dim = [31,
-           29 if y % 4 == 0 and (y % 100 != 0 or y % 400 == 0) else 28,
-           31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
-    day = min(d.day, dim)
-    return date(y, m, day)
 
 def current_access_rows(status: str):
     return (

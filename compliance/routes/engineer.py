@@ -5,6 +5,7 @@ from flask import Blueprint, request, redirect, url_for, flash, render_template,
 from compliance.models import db, LabAccess, Engineer, Lab, User, Document, DocumentAck
 from compliance.auth_utils import require_roles
 from compliance.utils_audit import audit
+from compliance.engine import add_months as _add_months
 
 bp = Blueprint("engineer", __name__, url_prefix="/engineer")
 
@@ -231,12 +232,6 @@ def dashboard():
     labs_dict = {l.id: l for l in Lab.query.all()}
     
     # Helper function to add months
-    def _add_months(d: date, months: int) -> date:
-        y = d.year + (d.month - 1 + months) // 12
-        m = (d.month - 1 + months) % 12 + 1
-        dim = [31, 29 if y % 4 == 0 and (y % 100 != 0 or y % 400 == 0) else 28,
-               31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
-        return date(y, m, min(d.day, dim))
     
     # Get training completions with expiration info
     completions = Completion.query.filter_by(

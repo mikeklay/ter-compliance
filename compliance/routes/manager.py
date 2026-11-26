@@ -14,90 +14,13 @@ from compliance.utils_audit import audit
 bp = Blueprint("manager", __name__, url_prefix="/manager")
 
 
-# ---------------------------
-# Helpers
-# ---------------------------
-
-def _add_months(d: date, months: int) -> date:
-    """Add `months` months to a date (simple month math; ok for compliance windows)."""
-    y = d.year + (d.month - 1 + months) // 12
-    m = (d.month - 1 + months) % 12 + 1
-    # clamp day
-    day = min(d.day, [31,
-                      29 if y % 4 == 0 and (y % 100 != 0 or y % 400 == 0) else 28,
-                      31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1])
-    return date(y, m, day)
-
-
-def _latest_completion(engineer_id: int, course_id: int) -> Optional[Completion]:
-    return (
-        Completion.query
-        .filter_by(engineer_id=engineer_id, course_id=course_id)
-        .order_by(Completion.date_taken.desc())
-        .first()
-    )
-
-
-def _is_training_current(engineer_id: int, course: Course, override_months: Optional[int],
-                         grace_days: int, asof: date) -> bool:
-    """
-    Returns True if the engineer has a non-expired completion for `course` (considering
-    LabRequirement override months if present, else course.valid_months), including lab grace days.
-    """
-    months = override_months if override_months is not None else course.valid_months
-    if not months or months <= 0:
-        # If no validity configured at all, treat as not current (manager should define it)
-        return False
-
-    comp = _latest_completion(engineer_id, course.id)
-    if not comp:
-        return False
-
-    due = _add_months(comp.date_taken, months)
-    # apply grace days at the lab level
-    due_grace = due.toordinal() + grace_days
-    return asof.toordinal() <= due_grace
-
-
-def _has_required_acks(engineer_id: int, lab_id: int) -> bool:
-    """All mandatory documents for the lab must be acknowledged at the current version."""
-    docs = Document.query.filter_by(lab_id=lab_id, mandatory=True).all()
-    if not docs:
-        return True
-    for d in docs:
-        ack = (
-            DocumentAck.query
-            .filter_by(engineer_id=engineer_id, document_id=d.id, version=d.version)
-            .first()
-        )
-        if not ack:
-            return False
-    return True
-
-
-def is_compliant_for_lab(engineer_id: int, lab_id: int, asof: Optional[date] = None) -> bool:
-    """
-    Compliance = all required courses are current AND all mandatory docs acknowledged.
-    """
-    asof = asof or date.today()
-    lab = Lab.query.get(lab_id)
-    if not lab:
-        return False
-
-    # Training requirements
-    reqs = LabRequirement.query.filter_by(lab_id=lab_id).all()
-    for r in reqs:
-        course = Course.query.get(r.course_id)
-        if not course:
-            return False
-        if not _is_training_current(engineer_id, course, r.valid_months, lab.grace_days, asof):
-            return False
-
-    # Document acknowledgements
-    if not _has_required_acks(engineer_id, lab_id):
-        return False
-
-    return True
+from compliance.engine import (  # noqa: F401  (re-exported for callers and tests)
+    add_months as _add_months,
+    latest_completion as _latest_completion,
+    is_training_current as _is_training_current,
+    has_required_acks as _has_required_acks,
+    is_compliant_for_lab,
+)
 
 
 def _ensure_access_state(engineer_id: int, lab_id: int, desired_status: str) -> LabAccess:

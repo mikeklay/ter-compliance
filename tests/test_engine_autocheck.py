@@ -10,7 +10,7 @@ REVOKED stays revoked until a manager approves again.
 from datetime import date, timedelta
 
 from compliance.models import db, Course, Completion, LabAccess, LabRequirement, AuditLog
-from compliance.routes.manager import is_compliant_for_lab
+from compliance.engine import add_months, is_compliant_for_lab
 
 
 def _status(engineer_id, lab_id):
@@ -169,3 +169,14 @@ def test_approve_rejects_non_numeric_ids(app, authenticated_client_manager):
     assert resp.status_code == 302
     with app.app_context():
         assert LabAccess.query.count() == 0
+
+
+# ---------------------------------------------------------------------------
+# Month arithmetic: expirations clamp to the end of shorter months
+# ---------------------------------------------------------------------------
+
+def test_add_months_clamps_to_month_end():
+    assert add_months(date(2025, 1, 31), 1) == date(2025, 2, 28)
+    assert add_months(date(2024, 1, 31), 1) == date(2024, 2, 29)   # leap year
+    assert add_months(date(2024, 2, 29), 12) == date(2025, 2, 28)  # leap day + 1 year
+    assert add_months(date(2025, 11, 15), 3) == date(2026, 2, 15)  # crosses a year

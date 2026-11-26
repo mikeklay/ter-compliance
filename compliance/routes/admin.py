@@ -19,6 +19,7 @@ from compliance.models import (
 )
 from compliance.s3util import s3_upload_bytes, s3_presign_get
 from compliance.auth_utils import require_roles
+from compliance.engine import add_months as _add_months
 
 bp = Blueprint("admin", __name__)
 
@@ -78,15 +79,6 @@ def _upload_fileobj(fs_file, *, prefix: str) -> str:
     content_type = fs_file.mimetype or "application/octet-stream"
     s3_upload_bytes(key, raw, content_type=content_type)
     return key
-
-def _add_months(d: date, months: int) -> date:
-    """Add months to a date (handles month-length variations)."""
-    y = d.year + (d.month - 1 + months) // 12
-    m = (d.month - 1 + months) % 12 + 1
-    dim = [31,
-           29 if y % 4 == 0 and (y % 100 != 0 or y % 400 == 0) else 28,
-           31,30,31,30,31,31,30,31,30,31][m-1]
-    return date(y, m, min(d.day, dim))
 
 def _csv_response(rows, filename: str) -> Response:
     sio = StringIO()
