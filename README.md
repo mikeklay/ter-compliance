@@ -209,7 +209,7 @@ Quantitative assessment demonstrates significant operational improvements. Autom
 
 Technical quality metrics include 62 automated tests executing in about 7 seconds using in-memory SQLite, providing rapid development feedback. During the capstone deployment, ECS Fargate automatically restarted the container on failure.
 
-Response times achieve 95th percentile under 500 milliseconds for page loads and form submissions. S3 file uploads require approximately 1.2 seconds for typical 500KB certificates, reasonable given cloud transfer latency. The system operates efficiently on minimal resources: 0.25 vCPU and 512MB RAM with average CPU utilization around 10% and memory usage approximately 200MB. Total production deployment cost ranges $30-45 monthly including database, storage, and compute resources.
+Response times achieve 95th percentile under 500 milliseconds for page loads and form submissions. S3 file uploads require approximately 1.2 seconds for typical 500KB certificates, reasonable given cloud transfer latency. The system operates efficiently on minimal resources: 0.25 vCPU and 512MB RAM with average CPU utilization around 10% and memory usage approximately 200MB. Total deployment cost was about $22 per month including database, storage, and compute resources.
 
 ## Current Status
 
