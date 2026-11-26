@@ -1,0 +1,98 @@
+{
+  "taskDefinitionArn": "arn:aws:ecs:us-west-2:<ACCOUNT_ID>:task-definition/ter-compliance-task:4",
+  "containerDefinitions": [
+    {
+      "name": "ter-compliance-container",
+      "image": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/ter-compliance:latest",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "hostPort": 5000,
+          "protocol": "tcp",
+          "name": "ter-compliance-container-5000-tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "us-west-2"
+        },
+        {
+          "name": "AWS_S3_BUCKET",
+          "value": "<YOUR_BUCKET>"
+        }
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ter-compliance",
+          "awslogs-region": "<REGION>",
+          "awslogs-stream-prefix": "ecs"
+        },
+        "secretOptions": []
+      },
+      "systemControls": [],
+      "secrets": [
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:ter/jwt_secret"
+        },
+        {
+          "name": "SQLALCHEMY_DATABASE_URI",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:ter/sqlalchemy_database_uri"
+        },
+        {
+          "name": "SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:ter/secret_key"
+        }
+      ]
+    }
+  ],
+  "family": "ter-compliance-task",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "revision": 4,
+  "volumes": [],
+  "status": "ACTIVE",
+  "requiresAttributes": [
+    {
+      "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+    },
+    {
+      "name": "ecs.capability.execution-role-awslogs"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.ecr-auth"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+    },
+    {
+      "name": "ecs.capability.execution-role-ecr-pull"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+    },
+    {
+      "name": "ecs.capability.task-eni"
+    }
+  ],
+  "placementConstraints": [],
+  "compatibilities": [
+    "EC2",
+    "FARGATE",
+    "MANAGED_INSTANCES"
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "512",
+  "registeredAt": "2025-10-26T14:27:01.330000-04:00",
+  "registeredBy": "arn:aws:iam::<ACCOUNT_ID>:root",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/terTaskRole"
+}

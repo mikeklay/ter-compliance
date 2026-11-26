@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Documents - TER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">TER - Training & Engineering Repository</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/engineer/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/engineer/documents">Documents</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/auth/logout">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2><i class="bi bi-file-earmark-text"></i> Required Documents</h2>
+                <p class="text-muted">
+                    Engineer: <strong>{{ engineer.name }}</strong> ({{ engineer.employee_no }})
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="/engineer/dashboard" class="btn btn-outline-primary">
+                    <i class="bi bi-speedometer2"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-primary">Total Documents</h5>
+                        <h2 class="display-4">{{ total_docs }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-success">Acknowledged</h5>
+                        <h2 class="display-4">{{ acknowledged_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-warning">Pending</h5>
+                        <h2 class="display-4">{{ pending_count }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compliance Alert -->
+        {% if pending_count > 0 %}
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>Action Required:</strong> You have {{ pending_count }} document(s) requiring acknowledgment.
+            Please review and acknowledge all mandatory documents to maintain lab access compliance.
+        </div>
+        {% else %}
+        <div class="alert alert-success" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <strong>All Caught Up!</strong> You have acknowledged all required documents.
+        </div>
+        {% endif %}
+
+        <!-- Documents Table -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Document List</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if documents %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Status</th>
+                                <th>Document</th>
+                                <th>Version</th>
+                                <th>Laboratory</th>
+                                <th>Uploaded</th>
+                                <th>Acknowledged</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in documents %}
+                            <tr class="{% if item.needs_ack %}table-warning{% endif %}">
+                                <td>
+                                    {% if item.acked %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Acknowledged
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-exclamation-circle"></i> Pending
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ item.doc.title }}</strong>
+                                    {% if item.doc.mandatory %}
+                                    <span class="badge bg-danger ms-1">Required</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">v{{ item.doc.version }}</span>
+                                </td>
+                                <td>
+                                    {% if item.lab %}
+                                    {{ item.lab.name }}
+                                    <small class="text-muted">({{ item.lab.code }})</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ item.doc.uploaded_at.strftime('%Y-%m-%d') if item.doc.uploaded_at else 'N/A' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if item.acked %}
+                                    <small class="text-success">
+                                        <i class="bi bi-check"></i>
+                                        {{ item.acked.acked_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                    {% else %}
+                                    <small class="text-muted">Not yet</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.needs_ack %}
+                                    <form method="POST" action="/engineer/acknowledge/{{ item.doc.id }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-check-square"></i> Acknowledge
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-secondary" disabled>
+                                        <i class="bi bi-check"></i> Done
+                                    </button>
+                                    {% endif %}
+                                    
+                                    {% if item.doc.s3_key %}
+                                    <a href="/admin/document/download?document_id={{ item.doc.id }}" 
+                                       class="btn btn-sm btn-outline-info ms-1" 
+                                       target="_blank">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-5 text-center text-muted">
+                    <i class="bi bi-inbox display-1"></i>
+                    <p class="mt-3">No documents found. You may not have any pending or active lab access requests.</p>
+                    <a href="/" class="btn btn-primary">Request Lab Access</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card mt-4 border-info">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-info-circle"></i> How Document Acknowledgment Works
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>All mandatory documents must be acknowledged before lab access is granted</li>
+                    <li>When a document is updated to a new version, you must re-acknowledge it</li>
+                    <li>Your acknowledgment status affects your compliance and lab access</li>
+                    <li>Click "Acknowledge" after reviewing each document carefully</li>
+                    <li>Download documents using the <i class="bi bi-download"></i> button if available</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-3 bg-light text-center">
+        <p class="text-muted mb-0">&copy; 2025 TER - Training &amp; Engineering Repository</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
